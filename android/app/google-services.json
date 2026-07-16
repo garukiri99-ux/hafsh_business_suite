@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "561425821067",
+    "project_id": "hafsh-busin",
+    "storage_bucket": "hafsh-busin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:561425821067:android:b5f478394441f3cea3d38e",
+        "android_client_info": {
+          "package_name": "com.example.hafsh_business_suite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnCEut2KujxhWU4yM_L_f8oqFxED7AQms"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
