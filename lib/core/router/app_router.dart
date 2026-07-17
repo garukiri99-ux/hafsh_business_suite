@@ -1,17 +1,23 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/login_page.dart';
+import '../../features/dashboard/dashboard_page.dart';
+import '../../features/splash/splash_page.dart';
+
 final appRouter = GoRouter(
+  initialLocation: '/',
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) {
-        return const Scaffold(
-          body: Center(
-            child: Text('Hafsh Business Suite'),
-          ),
-        );
-      },
+      builder: (context, state) => const SplashPage(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) => const DashboardPage(),
     ),
   ],
 );
