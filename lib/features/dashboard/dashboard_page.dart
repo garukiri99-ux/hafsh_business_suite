@@ -8,7 +8,7 @@ class DashboardPage extends StatelessWidget {
     return const Scaffold(
       body: Center(
         child: Text(
-          'Dashboard HBS',
+          'Selamat Datang di HBS',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,

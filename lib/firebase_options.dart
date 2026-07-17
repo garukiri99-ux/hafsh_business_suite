@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCe1JSE1zxNZ_2t-7gEtMAg6pP_Wcca5SA',
-    appId: '1:561425821067:web:1afcf40dbe7562dba3d38e',
-    messagingSenderId: '561425821067',
-    projectId: 'hafsh-busin',
-    authDomain: 'hafsh-busin.firebaseapp.com',
-    storageBucket: 'hafsh-busin.firebasestorage.app',
+    apiKey: 'AIzaSyBoCEQRbkksRb8EZ8hRJURJ9my7XqKnA9s',
+    appId: '1:563796128673:web:0000d41b94edbd071cd1e0',
+    messagingSenderId: '563796128673',
+    projectId: 'hafsh-business-suite',
+    authDomain: 'hafsh-business-suite.firebaseapp.com',
+    storageBucket: 'hafsh-business-suite.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDnCEut2KujxhWU4yM_L_f8oqFxED7AQms',
-    appId: '1:561425821067:android:b5f478394441f3cea3d38e',
-    messagingSenderId: '561425821067',
-    projectId: 'hafsh-busin',
-    storageBucket: 'hafsh-busin.firebasestorage.app',
+    apiKey: 'AIzaSyDtDJfh56peL2S_CQ7hOk5_OwKZKzrJXl4',
+    appId: '1:563796128673:android:1f1433bfca57aedf1cd1e0',
+    messagingSenderId: '563796128673',
+    projectId: 'hafsh-business-suite',
+    storageBucket: 'hafsh-business-suite.firebasestorage.app',
   );
 }
