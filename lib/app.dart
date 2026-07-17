@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
 class HbsApp extends StatelessWidget {
@@ -7,21 +8,11 @@ class HbsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Hafsh Business Suite',
       theme: AppTheme.light,
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Hafsh Business Suite',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
+      routerConfig: appRouter,
     );
   }
 }
