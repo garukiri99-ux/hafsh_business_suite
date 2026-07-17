@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'core/theme/app_theme.dart';
+
 class HbsApp extends StatelessWidget {
   const HbsApp({super.key});
 
@@ -8,13 +10,16 @@ class HbsApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Hafsh Business Suite',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.green,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: const Scaffold(
         body: Center(
-          child: Text('Hafsh Business Suite'),
+          child: Text(
+            'Hafsh Business Suite',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
