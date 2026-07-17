@@ -4,6 +4,7 @@ import '../widgets/business_unit_card.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/quick_stats.dart';
 import '../widgets/section_title.dart';
+import '../widgets/management_menu.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -50,6 +51,13 @@ class DashboardPage extends StatelessWidget {
               onTap: () {},
             ),
 
+            const SizedBox(height: 16),
+
+            const SectionTitle(
+              title: "Management",
+            ),
+            const ManagementMenu(),
+            
             const SizedBox(height: 24),
           ],
         ),
