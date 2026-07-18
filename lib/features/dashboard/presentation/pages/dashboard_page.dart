@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../widgets/business_unit_card.dart';
 import '../widgets/dashboard_header.dart';
@@ -32,7 +33,9 @@ class DashboardPage extends StatelessWidget {
               color: Colors.brown,
               title: "Hafsh Coffee",
               subtitle: "Kasir • Produk • Penjualan",
-              onTap: () {},
+              onTap: () {
+                context.push('/pos');
+              },
             ),
 
             BusinessUnitCard(
