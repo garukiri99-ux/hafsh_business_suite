@@ -46,7 +46,7 @@ class CartNotifier extends Notifier<List<CartItem>> {
 
     final items = [...state];
 
-    if (items[index].quantity == 1) {
+    if (items[index].quantity <= 1) {
       items.removeAt(index);
     } else {
       items[index] = items[index].copyWith(
@@ -55,6 +55,13 @@ class CartNotifier extends Notifier<List<CartItem>> {
     }
 
     state = items;
+  }
+
+  /// Menghapus produk dari keranjang tanpa melihat jumlahnya
+  void remove(Product product) {
+    state = state
+        .where((e) => e.product.id != product.id)
+        .toList();
   }
 
   void clear() {

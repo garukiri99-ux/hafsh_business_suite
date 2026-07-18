@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/currency_formatter.dart';
 import '../providers/cart_provider.dart';
@@ -106,7 +107,7 @@ class BottomCart extends ConsumerWidget {
                     ),
                   ),
                   onPressed: () {
-                    // Checkout nanti
+                    context.push('/checkout');
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text("Checkout"),
