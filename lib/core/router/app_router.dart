@@ -5,6 +5,7 @@ import '../../features/checkout/presentation/pages/checkout_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/pos/presentation/pages/pos_dashboard_page.dart';
 import '../../features/splash/splash_page.dart';
+import '../../features/payment/presentation/pages/payment_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -28,6 +29,11 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/checkout',
       builder: (context, state) => const CheckoutPage(),
+    ),
+    GoRoute(
+      path: '/payment',
+      builder: (context, state) =>
+          const PaymentPage(),
     ),
   ],
 );

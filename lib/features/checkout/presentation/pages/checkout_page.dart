@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../pos/presentation/providers/cart_provider.dart';
 import '../providers/checkout_provider.dart';
@@ -59,7 +60,7 @@ class CheckoutPage extends ConsumerWidget {
                 ),
                 CheckoutButton(
                   onPressed: () {
-                    // TODO: Payment Page
+                    context.push('/payment');
                   },
                 ),
               ],
