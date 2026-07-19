@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
+import '../../../payment/domain/entities/payment_method.dart';
+import '../../domain/entities/invoice.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/transaction_item.dart';
 
@@ -7,6 +9,46 @@ class TransactionModel {
   final Transaction transaction;
 
   const TransactionModel(this.transaction);
+
+  // Tambahkan di sini 👇
+  factory TransactionModel.fromMap(
+    Map<String, dynamic> map,
+  ) {
+    final createdAt =
+        (map['createdAt'] as firestore.Timestamp).toDate();
+
+    return TransactionModel(
+      Transaction(
+        invoice: Invoice(
+          number: map['invoice'] as String,
+          createdAt: createdAt,
+        ),
+        items: (map['items'] as List)
+            .map(
+              (e) => TransactionItem(
+                productId: e['productId'] as String,
+                productName: e['productName'] as String,
+                price: e['price'] as int,
+                quantity: e['quantity'] as int,
+              ),
+            )
+            .toList(),
+        paymentMethod: PaymentMethod.values.firstWhere(
+          (e) => e.name == map['paymentMethod'],
+        ),
+        subtotal: map['subtotal'] as int,
+        discount: map['discount'] as int,
+        tax: map['tax'] as int,
+        total: map['total'] as int,
+        paidAmount: map['paidAmount'] as int,
+        changeAmount: map['changeAmount'] as int,
+        status: map['status'] as String? ?? 'paid',
+        cashierId: map['cashierId'] as String? ?? '',
+        cashierName: map['cashierName'] as String? ?? '',
+        note: map['note'] as String?,
+      ),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {

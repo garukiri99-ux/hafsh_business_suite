@@ -20,4 +20,20 @@ class TransactionRepositoryImpl implements TransactionRepository {
         .doc(transaction.invoice.number)
         .set(model.toMap());
   }
+
+  @override
+  Future<List<Transaction>> getTransactions() async {
+    final snapshot = await db
+        .collection('transactions')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return snapshot.docs
+        .map(
+          (doc) => TransactionModel.fromMap(
+            doc.data(),
+          ).transaction,
+        )
+        .toList();
+  }
 }

@@ -54,6 +54,16 @@ class DashboardPage extends StatelessWidget {
               onTap: () {},
             ),
 
+            BusinessUnitCard(
+              icon: Icons.receipt_long,
+              color: Colors.indigo,
+              title: "Riwayat Transaksi",
+              subtitle: "Lihat seluruh transaksi",
+              onTap: () {
+                context.push('/transactions');
+              },
+            ),
+
             const SizedBox(height: 16),
 
             const SectionTitle(
