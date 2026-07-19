@@ -1,22 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/checkout_summary.dart';
 import '../../../pos/presentation/providers/cart_provider.dart';
-
-class CheckoutSummary {
-  final int totalItem;
-  final int subtotal;
-  final int discount;
-  final int tax;
-  final int total;
-
-  const CheckoutSummary({
-    required this.totalItem,
-    required this.subtotal,
-    required this.discount,
-    required this.tax,
-    required this.total,
-  });
-}
 
 final checkoutProvider = Provider<CheckoutSummary>((ref) {
   final cart = ref.watch(cartProvider);

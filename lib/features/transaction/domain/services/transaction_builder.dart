@@ -1,4 +1,4 @@
-import '../../../checkout/presentation/providers/checkout_provider.dart';
+import '../../../checkout/domain/entities/checkout_summary.dart';
 import '../../../payment/domain/entities/payment_method.dart';
 import '../../../pos/domain/entities/cart_item.dart';
 
