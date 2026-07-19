@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/transaction_item.dart';
 
@@ -9,11 +11,18 @@ class TransactionModel {
   Map<String, dynamic> toMap() {
     return {
       'invoice': transaction.invoice.number,
-      'createdAt':
-          transaction.invoice.createdAt.toIso8601String(),
 
-      'paymentMethod':
-          transaction.paymentMethod.name,
+      'createdAt': firestore.Timestamp.fromDate(
+        transaction.invoice.createdAt,
+      ),
+
+      'status': transaction.status,
+
+      'cashierId': transaction.cashierId,
+
+      'cashierName': transaction.cashierName,
+
+      'paymentMethod': transaction.paymentMethod.name,
 
       'subtotal': transaction.subtotal,
       'discount': transaction.discount,
@@ -23,6 +32,8 @@ class TransactionModel {
       'paidAmount': transaction.paidAmount,
       'changeAmount': transaction.changeAmount,
 
+      'note': transaction.note,
+
       'items': transaction.items
           .map(_itemToMap)
           .toList(),
@@ -30,7 +41,8 @@ class TransactionModel {
   }
 
   static Map<String, dynamic> _itemToMap(
-      TransactionItem item) {
+    TransactionItem item,
+  ) {
     return {
       'productId': item.productId,
       'productName': item.productName,

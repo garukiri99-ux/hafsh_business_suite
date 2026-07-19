@@ -5,6 +5,7 @@ import 'transaction_item.dart';
 
 class Transaction {
   final Invoice invoice;
+
   final List<TransactionItem> items;
 
   final PaymentMethod paymentMethod;
@@ -17,6 +18,15 @@ class Transaction {
   final int paidAmount;
   final int changeAmount;
 
+  /// Metadata
+  final String status;
+
+  final String cashierId;
+
+  final String cashierName;
+
+  final String? note;
+
   const Transaction({
     required this.invoice,
     required this.items,
@@ -27,5 +37,9 @@ class Transaction {
     required this.total,
     required this.paidAmount,
     required this.changeAmount,
+    this.status = 'paid',
+    this.cashierId = '',
+    this.cashierName = '',
+    this.note,
   });
 }
