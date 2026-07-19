@@ -7,6 +7,7 @@ import '../../features/payment/presentation/pages/payment_page.dart';
 import '../../features/pos/presentation/pages/pos_dashboard_page.dart';
 import '../../features/splash/splash_page.dart';
 import '../../features/transaction/presentation/pages/transaction_history_page.dart';
+import '../../features/printer/presentation/pages/printer_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -40,6 +41,11 @@ final appRouter = GoRouter(
       path: '/transactions',
       builder: (context, state) =>
           const TransactionHistoryPage(),
+    ),
+    GoRoute(
+      path: '/printer',
+      builder: (context, state) => 
+          const PrinterPage(),
     ),
   ],
 );

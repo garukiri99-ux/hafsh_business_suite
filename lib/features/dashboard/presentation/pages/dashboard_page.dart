@@ -64,6 +64,16 @@ class DashboardPage extends StatelessWidget {
               },
             ),
 
+            BusinessUnitCard(
+              icon: Icons.print,
+              color: Colors.blueGrey,
+              title: "Printer",
+              subtitle: "Bluetooth Thermal Printer",
+              onTap: () {
+                context.push('/printer');
+              },
+            ),
+
             const SizedBox(height: 16),
 
             const SectionTitle(
