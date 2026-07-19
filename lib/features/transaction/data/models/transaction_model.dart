@@ -14,8 +14,17 @@ class TransactionModel {
   factory TransactionModel.fromMap(
     Map<String, dynamic> map,
   ) {
-    final createdAt =
-        (map['createdAt'] as firestore.Timestamp).toDate();
+    final rawCreatedAt = map['createdAt'];
+
+    final DateTime createdAt;
+
+    if (rawCreatedAt is firestore.Timestamp) {
+      createdAt = rawCreatedAt.toDate();
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.parse(rawCreatedAt);
+    } else {
+      createdAt = DateTime.now();
+    }
 
     return TransactionModel(
       Transaction(
