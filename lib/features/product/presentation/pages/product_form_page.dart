@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/product.dart';
 import '../../providers/product_provider.dart';
+import '../../../category/providers/category_provider.dart';
+import '../../../supplier/providers/supplier_provider.dart';
 
 class ProductFormPage extends ConsumerStatefulWidget {
   final Product? product;
@@ -32,6 +35,9 @@ class _ProductFormPageState
 
   bool _isActive = true;
 
+  String? _selectedCategoryId;
+  String? _selectedSupplierId;
+
   bool get isEdit => widget.product != null;
 
   @override
@@ -50,33 +56,45 @@ class _ProductFormPageState
     _barcodeController =
         TextEditingController(text: product?.barcode ?? '');
 
-    _purchasePriceController =
-        TextEditingController(
+    _purchasePriceController = TextEditingController(
       text: product?.purchasePrice.toString() ?? '',
     );
 
-    _sellingPriceController =
-        TextEditingController(
+    _sellingPriceController = TextEditingController(
       text: product?.sellingPrice.toString() ?? '',
     );
 
-    _stockController =
-        TextEditingController(
+    _stockController = TextEditingController(
       text: product?.stock.toString() ?? '0',
     );
 
-    _minimumStockController =
-        TextEditingController(
+    _minimumStockController = TextEditingController(
       text: product?.minimumStock.toString() ?? '0',
     );
 
     _isActive = product?.isActive ?? true;
+
+    _selectedCategoryId = product?.categoryId;
+    _selectedSupplierId = product?.supplierId;
   }
 
   String _generateSku() {
-    final code = const Uuid().v4();
+    return const Uuid()
+        .v4()
+        .substring(0, 8)
+        .toUpperCase();
+  }
 
-    return code.substring(0, 8).toUpperCase();
+  String? _numberValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Wajib diisi';
+    }
+
+    if (double.tryParse(value) == null) {
+      return 'Masukkan angka yang valid';
+    }
+
+    return null;
   }
 
   @override
@@ -95,6 +113,11 @@ class _ProductFormPageState
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedCategoryId == null ||
+        _selectedSupplierId == null) {
+      return;
+    }
+
     final controller =
         ref.read(productControllerProvider.notifier);
 
@@ -102,11 +125,11 @@ class _ProductFormPageState
 
     final product = Product(
       id: widget.product?.id ?? const Uuid().v4(),
-      sku: _skuController.text,
-      barcode: _barcodeController.text,
-      name: _nameController.text,
-      categoryId: '',
-      supplierId: '',
+      sku: _skuController.text.trim(),
+      barcode: _barcodeController.text.trim(),
+      name: _nameController.text.trim(),
+      categoryId: _selectedCategoryId!,
+      supplierId: _selectedSupplierId!,
       purchasePrice:
           double.parse(_purchasePriceController.text),
       sellingPrice:
@@ -132,14 +155,15 @@ class _ProductFormPageState
     }
   }
 
-   @override
+    @override
   Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(categoryControllerProvider);
+    final suppliersAsync = ref.watch(supplierControllerProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isEdit
-              ? 'Edit Produk'
-              : 'Tambah Produk',
+          isEdit ? 'Edit Produk' : 'Tambah Produk',
         ),
       ),
       body: Form(
@@ -151,9 +175,10 @@ class _ProductFormPageState
               controller: _nameController,
               decoration: const InputDecoration(
                 labelText: 'Nama Produk',
+                border: OutlineInputBorder(),
               ),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null || value.trim().isEmpty) {
                   return 'Nama produk wajib diisi';
                 }
                 return null;
@@ -166,6 +191,7 @@ class _ProductFormPageState
               controller: _skuController,
               decoration: const InputDecoration(
                 labelText: 'SKU',
+                border: OutlineInputBorder(),
               ),
             ),
 
@@ -175,18 +201,102 @@ class _ProductFormPageState
               controller: _barcodeController,
               decoration: const InputDecoration(
                 labelText: 'Barcode',
+                border: OutlineInputBorder(),
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            categoriesAsync.when(
+  data: (categories) => DropdownButtonFormField<String>(
+    initialValue: _selectedCategoryId,
+    decoration: const InputDecoration(
+      labelText: 'Kategori',
+      border: OutlineInputBorder(),
+    ),
+    items: categories
+        .map(
+          (category) => DropdownMenuItem<String>(
+            value: category.id,
+            child: Text(category.name),
+          ),
+        )
+        .toList(),
+    onChanged: (value) {
+      setState(() {
+        _selectedCategoryId = value;
+      });
+    },
+    validator: (value) {
+      if (value == null) {
+        return 'Kategori wajib dipilih';
+      }
+      return null;
+    },
+  ),
+  loading: () => const Center(
+    child: CircularProgressIndicator(),
+  ),
+  error: (error, stackTrace) => Text(
+    'Error: $error',
+  ),
+),
+
+            const SizedBox(height: 16),
+
+            suppliersAsync.when(
+  data: (suppliers) => DropdownButtonFormField<String>(
+    initialValue: _selectedSupplierId,
+    decoration: const InputDecoration(
+      labelText: 'Supplier',
+      border: OutlineInputBorder(),
+    ),
+    items: suppliers
+        .map(
+          (supplier) => DropdownMenuItem<String>(
+            value: supplier.id,
+            child: Text(supplier.name),
+          ),
+        )
+        .toList(),
+    onChanged: (value) {
+      setState(() {
+        _selectedSupplierId = value;
+      });
+    },
+    validator: (value) {
+      if (value == null) {
+        return 'Supplier wajib dipilih';
+      }
+      return null;
+    },
+  ),
+  loading: () => const Center(
+    child: CircularProgressIndicator(),
+  ),
+  error: (error, stackTrace) => Text(
+    'Error: $error',
+  ),
+),
 
             const SizedBox(height: 16),
 
             TextFormField(
               controller: _purchasePriceController,
               keyboardType:
-                  TextInputType.number,
+                  const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'^\d*\.?\d*$'),
+                ),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Harga Beli',
+                border: OutlineInputBorder(),
               ),
+              validator: _numberValidator,
             ),
 
             const SizedBox(height: 16),
@@ -194,10 +304,19 @@ class _ProductFormPageState
             TextFormField(
               controller: _sellingPriceController,
               keyboardType:
-                  TextInputType.number,
+                  const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'^\d*\.?\d*$'),
+                ),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Harga Jual',
+                border: OutlineInputBorder(),
               ),
+              validator: _numberValidator,
             ),
 
             const SizedBox(height: 16),
@@ -205,27 +324,45 @@ class _ProductFormPageState
             TextFormField(
               controller: _stockController,
               keyboardType:
-                  TextInputType.number,
+                  const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'^\d*\.?\d*$'),
+                ),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Stok',
+                border: OutlineInputBorder(),
               ),
+              validator: _numberValidator,
             ),
 
             const SizedBox(height: 16),
 
             TextFormField(
-              controller:
-                  _minimumStockController,
+              controller: _minimumStockController,
               keyboardType:
-                  TextInputType.number,
+                  const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'^\d*\.?\d*$'),
+                ),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Minimum Stok',
+                border: OutlineInputBorder(),
               ),
+              validator: _numberValidator,
             ),
 
             const SizedBox(height: 16),
 
             SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               value: _isActive,
               title: const Text(
                 'Produk Aktif',
@@ -239,14 +376,21 @@ class _ProductFormPageState
 
             const SizedBox(height: 24),
 
-            FilledButton.icon(
-              onPressed: _save,
-              icon: const Icon(Icons.save),
-              label: const Text('Simpan'),
+            SizedBox(
+              height: 50,
+              child: FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.save),
+                label: Text(
+                  isEdit
+                      ? 'Update Produk'
+                      : 'Simpan Produk',
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-} 
+}
