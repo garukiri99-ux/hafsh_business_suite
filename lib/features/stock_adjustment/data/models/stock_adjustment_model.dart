@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/inventory/stock_adjustment_reason.dart';
+import '../../../../core/inventory/stock_adjustment_type.dart';
 import '../../domain/entities/stock_adjustment.dart';
 
 class StockAdjustmentModel extends StockAdjustment {
@@ -46,11 +48,15 @@ class StockAdjustmentModel extends StockAdjustment {
     return StockAdjustmentModel(
       id: id,
       productId: json['productId'] ?? '',
-      type: json['type'] ?? '',
+      type: StockAdjustmentTypeX.fromString(
+        json['type'] ?? 'in',
+      ),
       quantity: (json['quantity'] ?? 0).toDouble(),
       stockBefore: (json['stockBefore'] ?? 0).toDouble(),
       stockAfter: (json['stockAfter'] ?? 0).toDouble(),
-      reason: json['reason'] ?? '',
+      reason: StockAdjustmentReasonX.fromString(
+        json['reason'] ?? 'manual',
+      ),
       notes: json['notes'] ?? '',
       createdBy: json['createdBy'],
       createdAt:
@@ -80,11 +86,11 @@ class StockAdjustmentModel extends StockAdjustment {
   Map<String, dynamic> toJson() {
     return {
       'productId': productId,
-      'type': type,
+      'type': type.value,
       'quantity': quantity,
       'stockBefore': stockBefore,
       'stockAfter': stockAfter,
-      'reason': reason,
+      'reason': reason.value,
       'notes': notes,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -121,11 +127,11 @@ class StockAdjustmentModel extends StockAdjustment {
   StockAdjustmentModel copyWith({
     String? id,
     String? productId,
-    String? type,
+    StockAdjustmentType? type,
     double? quantity,
     double? stockBefore,
     double? stockAfter,
-    String? reason,
+    StockAdjustmentReason? reason,
     String? notes,
     String? createdBy,
     DateTime? createdAt,

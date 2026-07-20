@@ -1,12 +1,15 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/inventory/stock_adjustment_reason.dart';
+import '../../../../core/inventory/stock_adjustment_type.dart';
+
 class StockAdjustment extends Equatable {
   final String id;
 
   final String productId;
 
-  /// in | out
-  final String type;
+  /// Jenis penyesuaian stok.
+  final StockAdjustmentType type;
 
   final double quantity;
 
@@ -14,8 +17,8 @@ class StockAdjustment extends Equatable {
 
   final double stockAfter;
 
-  /// restock | sold | damaged | expired | lost | manual
-  final String reason;
+  /// Alasan penyesuaian stok.
+  final StockAdjustmentReason reason;
 
   final String notes;
 
@@ -50,7 +53,9 @@ class StockAdjustment extends Equatable {
         createdAt,
       ];
 
-  bool get isStockIn => type == 'in';
+  bool get isStockIn =>
+      type == StockAdjustmentType.stockIn;
 
-  bool get isStockOut => type == 'out';
+  bool get isStockOut =>
+      type == StockAdjustmentType.stockOut;
 }

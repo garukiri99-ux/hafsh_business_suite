@@ -141,6 +141,7 @@ class ProductModel extends Product {
   /// ==========================
   /// Copy With
   /// ==========================
+  @override
   ProductModel copyWith({
     String? id,
     String? sku,
