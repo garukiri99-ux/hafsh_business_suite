@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ManagementMenu extends StatelessWidget {
   const ManagementMenu({super.key});
@@ -10,31 +11,37 @@ class ManagementMenu extends StatelessWidget {
         Icons.inventory_2_rounded,
         "Inventory",
         Colors.orange,
+        "/inventory",
       ),
       (
         Icons.account_balance_wallet_rounded,
         "Finance",
         Colors.green,
+        "",
       ),
       (
         Icons.bar_chart_rounded,
         "Reports",
         Colors.blue,
+        "",
       ),
       (
         Icons.people_alt_rounded,
         "Users",
         Colors.purple,
+        "",
       ),
       (
         Icons.settings_rounded,
         "Settings",
         Colors.grey,
+        "",
       ),
       (
         Icons.admin_panel_settings_rounded,
         "Roles",
         Colors.red,
+        "",
       ),
     ];
 
@@ -62,7 +69,19 @@ class ManagementMenu extends StatelessWidget {
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: () {},
+              onTap: () {
+                if (menu.$4.isNotEmpty) {
+                  context.push(menu.$4);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "${menu.$2} - Coming Soon",
+                      ),
+                    ),
+                  );
+                }
+              },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,

@@ -2,22 +2,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/datasources/category_firestore_datasource.dart';
 import '../data/repositories/category_repository_impl.dart';
-import '../domain/entities/category.dart';
 import '../domain/repositories/category_repository.dart';
 import '../presentation/controllers/category_controller.dart';
 
-final categoryDatasourceProvider =
-    Provider<CategoryFirestoreDatasource>((ref) {
-  return CategoryFirestoreDatasource();
-});
+final categoryFirestoreDatasourceProvider =
+    Provider<CategoryFirestoreDatasource>(
+  (ref) => CategoryFirestoreDatasource(),
+);
 
-final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
-  return CategoryRepositoryImpl(
-    ref.watch(categoryDatasourceProvider),
-  );
-});
+final categoryRepositoryProvider = Provider<CategoryRepository>(
+  (ref) => CategoryRepositoryImpl(
+    ref.watch(categoryFirestoreDatasourceProvider),
+  ),
+);
 
 final categoryControllerProvider =
-    StreamNotifierProvider<CategoryController, List<Category>>(
+    StreamNotifierProvider<CategoryController, List>(
   CategoryController.new,
 );

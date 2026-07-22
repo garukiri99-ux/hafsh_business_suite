@@ -32,4 +32,34 @@ class Category {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  @override
+  String toString() {
+    return 'Category(id: $id, name: $name, isActive: $isActive)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Category &&
+        other.id == id &&
+        other.name == name &&
+        other.description == description &&
+        other.isActive == isActive &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      name,
+      description,
+      isActive,
+      createdAt,
+      updatedAt,
+    );
+  }
 }
