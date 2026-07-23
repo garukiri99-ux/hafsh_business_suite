@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/category.dart';
+import '../../providers/category_provider.dart';
 
-class CategoryFormPage extends StatefulWidget {
+class CategoryFormPage extends ConsumerStatefulWidget {
   const CategoryFormPage({
     super.key,
     this.category,
@@ -11,16 +14,20 @@ class CategoryFormPage extends StatefulWidget {
   final Category? category;
 
   @override
-  State<CategoryFormPage> createState() => _CategoryFormPageState();
+  ConsumerState<CategoryFormPage> createState() =>
+      _CategoryFormPageState();
 }
 
-class _CategoryFormPageState extends State<CategoryFormPage> {
+class _CategoryFormPageState
+    extends ConsumerState<CategoryFormPage> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
 
   bool _isActive = true;
+
+  bool get isEdit => widget.category != null;
 
   @override
   void initState() {
@@ -44,64 +51,150 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
     super.dispose();
   }
 
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final controller =
+        ref.read(categoryControllerProvider.notifier);
+
+    final now = DateTime.now();
+
+    final category = Category(
+      id: widget.category?.id ??
+          const Uuid().v4(),
+      name: _nameController.text.trim(),
+      description:
+          _descriptionController.text
+                  .trim()
+                  .isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+      isActive: _isActive,
+      createdAt:
+          widget.category?.createdAt ?? now,
+      updatedAt: now,
+    );
+
+    if (isEdit) {
+      await controller.updateCategory(category);
+    } else {
+      await controller.addCategory(category);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isEdit
+              ? 'Kategori berhasil diperbarui'
+              : 'Kategori berhasil ditambahkan',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.category != null;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isEdit ? 'Edit Kategori' : 'Tambah Kategori',
+          isEdit
+              ? 'Edit Kategori'
+              : 'Tambah Kategori',
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Kategori',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Nama kategori wajib diisi';
-                  }
-                  return null;
-                },
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+                        TextFormField(
+              controller: _nameController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Nama Kategori',
+                hintText: 'Contoh: Biji Kopi',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi',
-                ),
+              validator: (value) {
+                if (value == null ||
+                    value.trim().isEmpty) {
+                  return 'Nama kategori wajib diisi';
+                }
+
+                if (value.trim().length < 3) {
+                  return 'Minimal 3 karakter';
+                }
+
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            TextFormField(
+              controller: _descriptionController,
+              maxLines: 3,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Deskripsi',
+                hintText:
+                    'Deskripsi kategori (opsional)',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
               ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Aktif'),
+            ),
+
+            const SizedBox(height: 16),
+
+            Card(
+              child: SwitchListTile(
                 value: _isActive,
+                contentPadding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
+                title: const Text(
+                  'Kategori Aktif',
+                ),
+                subtitle: Text(
+                  _isActive
+                      ? 'Kategori dapat digunakan'
+                      : 'Kategori dinonaktifkan',
+                ),
                 onChanged: (value) {
                   setState(() {
                     _isActive = value;
                   });
                 },
               ),
-              const Spacer(),
-              FilledButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text(
-                  isEdit ? 'Update' : 'Simpan',
+            ),
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(
+                  Icons.save,
+                ),
+                label: Text(
+                  isEdit
+                      ? 'Update Kategori'
+                      : 'Simpan Kategori',
                 ),
               ),
-            ],
-          ),
+            ),
+         ],
         ),
       ),
     );
