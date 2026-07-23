@@ -46,4 +46,32 @@ class SupplierFirestoreDatasource {
   Future<void> deleteSupplier(String id) async {
     await _collection.doc(id).delete();
   }
+
+  Future<void> toggleSupplierStatus({
+    required String id,
+    required bool isActive,
+  }) async {
+    await _collection.doc(id).update({
+      'isActive': isActive,
+      'updatedAt': Timestamp.now(),
+    });
+  }
+
+  Future<bool> existsByName(
+    String name, {
+    String? excludeId,
+  }) async {
+    final snapshot = await _collection
+        .where('name', isEqualTo: name.trim())
+        .limit(10)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      if (excludeId == null || doc.id != excludeId) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

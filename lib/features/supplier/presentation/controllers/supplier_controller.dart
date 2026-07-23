@@ -24,4 +24,24 @@ class SupplierController extends StreamNotifier<List<Supplier>> {
   Future<Supplier?> getSupplierById(String id) async {
     return ref.read(supplierRepositoryProvider).getSupplierById(id);
   }
+
+  Future<void> toggleSupplierStatus({
+    required String id,
+    required bool isActive,
+  }) async {
+    await ref.read(supplierRepositoryProvider).toggleSupplierStatus(
+          id: id,
+          isActive: isActive,
+        );
+  }
+
+  Future<bool> existsByName(
+    String name, {
+    String? excludeId,
+  }) {
+    return ref.read(supplierRepositoryProvider).existsByName(
+          name,
+          excludeId: excludeId,
+        );
+  }
 }

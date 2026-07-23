@@ -45,4 +45,26 @@ class SupplierRepositoryImpl implements SupplierRepository {
   Future<void> deleteSupplier(String id) {
     return _datasource.deleteSupplier(id);
   }
+
+  @override
+  Future<void> toggleSupplierStatus({
+    required String id,
+    required bool isActive,
+  }) {
+    return _datasource.toggleSupplierStatus(
+      id: id,
+      isActive: isActive,
+    );
+  }
+
+  @override
+  Future<bool> existsByName(
+    String name, {
+    String? excludeId,
+  }) {
+    return _datasource.existsByName(
+      name,
+      excludeId: excludeId,
+    );
+  }
 }

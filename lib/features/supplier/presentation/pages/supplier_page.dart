@@ -30,8 +30,52 @@ class SupplierPage extends ConsumerWidget {
             separatorBuilder: (context, index) =>
                 const SizedBox(height: 12),
             itemBuilder: (context, index) {
+              final supplier = items[index];
+
               return SupplierCard(
-                supplier: items[index],
+                supplier: supplier,
+                onTap: () {
+                  // TODO: Halaman detail supplier
+                },
+                onEdit: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SupplierFormPage(
+                        supplier: supplier,
+                      ),
+                    ),
+                  );
+                },
+                onDelete: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Hapus Supplier'),
+                      content: Text(
+                        'Yakin ingin menghapus "${supplier.name}"?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, false),
+                          child: const Text('Batal'),
+                        ),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, true),
+                          child: const Text('Hapus'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await ref
+                        .read(supplierControllerProvider.notifier)
+                        .deleteSupplier(supplier.id);
+                  }
+                },
               );
             },
           );

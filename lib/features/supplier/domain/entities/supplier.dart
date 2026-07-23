@@ -1,10 +1,13 @@
-class Supplier {
+import 'package:equatable/equatable.dart';
+
+class Supplier extends Equatable {
   final String id;
   final String name;
   final String? contactPerson;
   final String? phone;
   final String? email;
   final String? address;
+  final String? notes;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -16,7 +19,8 @@ class Supplier {
     this.phone,
     this.email,
     this.address,
-    required this.isActive,
+    this.notes,
+    this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -28,6 +32,7 @@ class Supplier {
     String? phone,
     String? email,
     String? address,
+    String? notes,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -39,9 +44,24 @@ class Supplier {
       phone: phone ?? this.phone,
       email: email ?? this.email,
       address: address ?? this.address,
+      notes: notes ?? this.notes,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        name,
+        contactPerson,
+        phone,
+        email,
+        address,
+        notes,
+        isActive,
+        createdAt,
+        updatedAt,
+      ];
 }
