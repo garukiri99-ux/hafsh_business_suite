@@ -23,6 +23,12 @@ class StockAdjustmentController
     await _repository.addAdjustment(adjustment);
   }
 
+  Future<void> updateAdjustment(
+    StockAdjustment adjustment,
+  ) async {
+    await _repository.updateAdjustment(adjustment);
+  }
+
   Future<void> deleteAdjustment(
     String id,
   ) async {

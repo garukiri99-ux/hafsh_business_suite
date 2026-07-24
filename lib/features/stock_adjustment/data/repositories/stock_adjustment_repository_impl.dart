@@ -51,6 +51,17 @@ class StockAdjustmentRepositoryImpl
   }
 
   @override
+  Future<void> updateAdjustment(
+    StockAdjustment adjustment,
+  ) async {
+    await _datasource.updateAdjustment(
+      StockAdjustmentModel.fromEntity(
+        adjustment,
+      ),
+    );
+  }
+
+  @override
   Future<void> deleteAdjustment(
     String id,
   ) async {

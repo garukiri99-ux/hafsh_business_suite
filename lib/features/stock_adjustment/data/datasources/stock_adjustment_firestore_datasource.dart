@@ -70,6 +70,14 @@ class StockAdjustmentFirestoreDatasource {
         .set(adjustment);
   }
 
+  Future<void> updateAdjustment(
+    StockAdjustmentModel adjustment,
+  ) async {
+    await _collection
+        .doc(adjustment.id)
+        .update(adjustment.toJson());
+  }
+
   Future<void> deleteAdjustment(
     String id,
   ) async {

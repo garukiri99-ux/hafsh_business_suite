@@ -8,12 +8,15 @@ class StockAdjustmentModel extends StockAdjustment {
   const StockAdjustmentModel({
     required super.id,
     required super.productId,
+    required super.productName,
     required super.type,
     required super.quantity,
     required super.stockBefore,
     required super.stockAfter,
     required super.reason,
     required super.notes,
+    super.referenceType,
+    super.referenceId,
     required super.createdBy,
     required super.createdAt,
   });
@@ -27,12 +30,15 @@ class StockAdjustmentModel extends StockAdjustment {
     return StockAdjustmentModel(
       id: adjustment.id,
       productId: adjustment.productId,
+      productName: adjustment.productName,
       type: adjustment.type,
       quantity: adjustment.quantity,
       stockBefore: adjustment.stockBefore,
       stockAfter: adjustment.stockAfter,
       reason: adjustment.reason,
       notes: adjustment.notes,
+      referenceType: adjustment.referenceType,
+      referenceId: adjustment.referenceId,
       createdBy: adjustment.createdBy,
       createdAt: adjustment.createdAt,
     );
@@ -48,6 +54,7 @@ class StockAdjustmentModel extends StockAdjustment {
     return StockAdjustmentModel(
       id: id,
       productId: json['productId'] ?? '',
+      productName: json['productName'] ?? '',
       type: StockAdjustmentTypeX.fromString(
         json['type'] ?? 'in',
       ),
@@ -58,6 +65,8 @@ class StockAdjustmentModel extends StockAdjustment {
         json['reason'] ?? 'manual',
       ),
       notes: json['notes'] ?? '',
+      referenceType: json['referenceType'],
+      referenceId: json['referenceId'],
       createdBy: json['createdBy'],
       createdAt:
           (json['createdAt'] as Timestamp?)?.toDate() ??
@@ -86,12 +95,15 @@ class StockAdjustmentModel extends StockAdjustment {
   Map<String, dynamic> toJson() {
     return {
       'productId': productId,
+      'productName': productName,
       'type': type.value,
       'quantity': quantity,
       'stockBefore': stockBefore,
       'stockAfter': stockAfter,
       'reason': reason.value,
       'notes': notes,
+      'referenceType': referenceType,
+      'referenceId': referenceId,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
     };
@@ -110,12 +122,15 @@ class StockAdjustmentModel extends StockAdjustment {
     return StockAdjustment(
       id: id,
       productId: productId,
+      productName: productName,
       type: type,
       quantity: quantity,
       stockBefore: stockBefore,
       stockAfter: stockAfter,
       reason: reason,
       notes: notes,
+      referenceType: referenceType,
+      referenceId: referenceId,
       createdBy: createdBy,
       createdAt: createdAt,
     );
@@ -127,24 +142,30 @@ class StockAdjustmentModel extends StockAdjustment {
   StockAdjustmentModel copyWith({
     String? id,
     String? productId,
+    String? productName,
     StockAdjustmentType? type,
     double? quantity,
     double? stockBefore,
     double? stockAfter,
     StockAdjustmentReason? reason,
     String? notes,
+    String? referenceType,
+    String? referenceId,
     String? createdBy,
     DateTime? createdAt,
   }) {
     return StockAdjustmentModel(
       id: id ?? this.id,
       productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
       type: type ?? this.type,
       quantity: quantity ?? this.quantity,
       stockBefore: stockBefore ?? this.stockBefore,
       stockAfter: stockAfter ?? this.stockAfter,
       reason: reason ?? this.reason,
       notes: notes ?? this.notes,
+      referenceType: referenceType ?? this.referenceType,
+      referenceId: referenceId ?? this.referenceId,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
     );
