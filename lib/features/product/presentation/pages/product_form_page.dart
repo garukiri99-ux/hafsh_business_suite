@@ -57,11 +57,15 @@ class _ProductFormPageState
         TextEditingController(text: product?.barcode ?? '');
 
     _purchasePriceController = TextEditingController(
-      text: product?.purchasePrice.toString() ?? '',
+      text: product == null
+          ? ''
+          : _formatCurrencyInput(product.purchasePrice),
     );
 
     _sellingPriceController = TextEditingController(
-      text: product?.sellingPrice.toString() ?? '',
+      text: product == null
+          ? ''
+          : _formatCurrencyInput(product.sellingPrice),
     );
 
     _stockController = TextEditingController(
@@ -85,6 +89,20 @@ class _ProductFormPageState
         .toUpperCase();
   }
 
+  String _formatCurrencyInput(double value) {
+    return value.toInt().toString();
+  }
+
+  double _parseCurrency(String value) {
+    final normalized = value.replaceAll('.', '').trim();
+
+    if (normalized.isEmpty) {
+      return 0;
+    }
+
+    return double.parse(normalized);
+  }
+
   String? _numberValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Wajib diisi';
@@ -92,6 +110,22 @@ class _ProductFormPageState
 
     if (double.tryParse(value) == null) {
       return 'Masukkan angka yang valid';
+    }
+
+    return null;
+  }
+
+  String? _currencyValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Wajib diisi';
+    }
+
+    final normalized =
+        value.replaceAll('.', '').trim();
+
+    if (normalized.isEmpty ||
+        double.tryParse(normalized) == null) {
+      return 'Masukkan harga yang valid';
     }
 
     return null;
@@ -131,9 +165,9 @@ class _ProductFormPageState
       categoryId: _selectedCategoryId!,
       supplierId: _selectedSupplierId!,
       purchasePrice:
-          double.parse(_purchasePriceController.text),
+          _parseCurrency(_purchasePriceController.text),
       sellingPrice:
-          double.parse(_sellingPriceController.text),
+          _parseCurrency(_sellingPriceController.text),
       stock: double.parse(_stockController.text),
       minimumStock:
           double.parse(_minimumStockController.text),
@@ -155,10 +189,12 @@ class _ProductFormPageState
     }
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoryControllerProvider);
-    final suppliersAsync = ref.watch(supplierControllerProvider);
+    final categoriesAsync =
+        ref.watch(categoryControllerProvider);
+    final suppliersAsync =
+        ref.watch(supplierControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -178,7 +214,8 @@ class _ProductFormPageState
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty) {
+                if (value == null ||
+                    value.trim().isEmpty) {
                   return 'Nama produk wajib diisi';
                 }
                 return null;
@@ -208,76 +245,80 @@ class _ProductFormPageState
             const SizedBox(height: 16),
 
             categoriesAsync.when(
-  data: (categories) => DropdownButtonFormField<String>(
-    initialValue: _selectedCategoryId,
-    decoration: const InputDecoration(
-      labelText: 'Kategori',
-      border: OutlineInputBorder(),
-    ),
-    items: categories
-        .map(
-          (category) => DropdownMenuItem<String>(
-            value: category.id,
-            child: Text(category.name),
-          ),
-        )
-        .toList(),
-    onChanged: (value) {
-      setState(() {
-        _selectedCategoryId = value;
-      });
-    },
-    validator: (value) {
-      if (value == null) {
-        return 'Kategori wajib dipilih';
-      }
-      return null;
-    },
-  ),
-  loading: () => const Center(
-    child: CircularProgressIndicator(),
-  ),
-  error: (error, stackTrace) => Text(
-    'Error: $error',
-  ),
-),
+              data: (categories) =>
+                  DropdownButtonFormField<String>(
+                initialValue: _selectedCategoryId,
+                decoration: const InputDecoration(
+                  labelText: 'Kategori',
+                  border: OutlineInputBorder(),
+                ),
+                items: categories
+                    .map(
+                      (category) =>
+                          DropdownMenuItem<String>(
+                        value: category.id,
+                        child: Text(category.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategoryId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Kategori wajib dipilih';
+                  }
+                  return null;
+                },
+              ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              error: (error, stackTrace) => Text(
+                'Error: $error',
+              ),
+            ),
 
             const SizedBox(height: 16),
 
             suppliersAsync.when(
-  data: (suppliers) => DropdownButtonFormField<String>(
-    initialValue: _selectedSupplierId,
-    decoration: const InputDecoration(
-      labelText: 'Supplier',
-      border: OutlineInputBorder(),
-    ),
-    items: suppliers
-        .map(
-          (supplier) => DropdownMenuItem<String>(
-            value: supplier.id,
-            child: Text(supplier.name),
-          ),
-        )
-        .toList(),
-    onChanged: (value) {
-      setState(() {
-        _selectedSupplierId = value;
-      });
-    },
-    validator: (value) {
-      if (value == null) {
-        return 'Supplier wajib dipilih';
-      }
-      return null;
-    },
-  ),
-  loading: () => const Center(
-    child: CircularProgressIndicator(),
-  ),
-  error: (error, stackTrace) => Text(
-    'Error: $error',
-  ),
-),
+              data: (suppliers) =>
+                  DropdownButtonFormField<String>(
+                initialValue: _selectedSupplierId,
+                decoration: const InputDecoration(
+                  labelText: 'Supplier',
+                  border: OutlineInputBorder(),
+                ),
+                items: suppliers
+                    .map(
+                      (supplier) =>
+                          DropdownMenuItem<String>(
+                        value: supplier.id,
+                        child: Text(supplier.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSupplierId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Supplier wajib dipilih';
+                  }
+                  return null;
+                },
+              ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              error: (error, stackTrace) => Text(
+                'Error: $error',
+              ),
+            ),
 
             const SizedBox(height: 16),
 
@@ -285,7 +326,7 @@ class _ProductFormPageState
               controller: _purchasePriceController,
               keyboardType:
                   const TextInputType.numberWithOptions(
-                decimal: true,
+                decimal: false,
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(
@@ -294,9 +335,10 @@ class _ProductFormPageState
               ],
               decoration: const InputDecoration(
                 labelText: 'Harga Beli',
+                hintText: 'Contoh: 195.000',
                 border: OutlineInputBorder(),
               ),
-              validator: _numberValidator,
+              validator: _currencyValidator,
             ),
 
             const SizedBox(height: 16),
@@ -305,7 +347,7 @@ class _ProductFormPageState
               controller: _sellingPriceController,
               keyboardType:
                   const TextInputType.numberWithOptions(
-                decimal: true,
+                decimal: false,
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(
@@ -314,9 +356,10 @@ class _ProductFormPageState
               ],
               decoration: const InputDecoration(
                 labelText: 'Harga Jual',
+                hintText: 'Contoh: 14.000',
                 border: OutlineInputBorder(),
               ),
-              validator: _numberValidator,
+              validator: _currencyValidator,
             ),
 
             const SizedBox(height: 16),

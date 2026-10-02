@@ -4,29 +4,37 @@ import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../providers/product_provider.dart';
 
-class ProductController extends StreamNotifier<List<Product>> {
-  late final ProductRepository _repository;
+class ProductController
+    extends StreamNotifier<List<Product>> {
+  ProductRepository get _repository =>
+      ref.read(productRepositoryProvider);
 
   @override
   Stream<List<Product>> build() {
-    _repository = ref.read(productRepositoryProvider);
-
     return _repository.watchProducts();
   }
 
-  Future<void> addProduct(Product product) async {
+  Future<void> addProduct(
+    Product product,
+  ) async {
     await _repository.addProduct(product);
   }
 
-  Future<void> updateProduct(Product product) async {
+  Future<void> updateProduct(
+    Product product,
+  ) async {
     await _repository.updateProduct(product);
   }
 
-  Future<void> deleteProduct(String id) async {
+  Future<void> deleteProduct(
+    String id,
+  ) async {
     await _repository.deleteProduct(id);
   }
 
-  Future<Product?> getProductById(String id) async {
+  Future<Product?> getProductById(
+    String id,
+  ) async {
     return _repository.getProductById(id);
   }
 }

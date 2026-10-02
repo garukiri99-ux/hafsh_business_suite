@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/inventory/stock_adjustment_reason.dart';
+import '../../../../core/inventory/stock_adjustment_type.dart'
+    as core_inventory;
+import '../../../stock_adjustment/domain/entities/stock_adjustment.dart';
+import '../../../stock_adjustment/presentation/dialogs/stock_adjustment_dialog.dart';
+import '../../../stock_adjustment/providers/stock_adjustment_provider.dart';
 import '../../domain/entities/product.dart';
 import '../../providers/product_provider.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_filter_chip.dart';
 import '../widgets/product_search.dart';
 import 'product_form_page.dart';
-import '../../../stock_adjustment/presentation/dialogs/stock_adjustment_dialog.dart';
 
 class ProductPage extends ConsumerStatefulWidget {
   const ProductPage({super.key});
@@ -152,33 +157,168 @@ class _ProductPageState
   }
 
   Future<void> _showAdjustStockDialog(
-  Product product,
-) async {
-  final result =
-      await showDialog<StockAdjustmentResult>(
-    context: context,
-    builder: (_) => StockAdjustmentDialog(
-      productName: product.name,
-      currentStock: product.stock,
-    ),
-  );
-
-  if (result == null) return;
-
-  if (!mounted) return;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        'Adjustment "${product.name}" '
-        '(${result.type.name}) '
-        '${result.quantity}',
+    Product product,
+  ) async {
+    final result =
+        await showDialog<StockAdjustmentResult>(
+      context: context,
+      builder: (_) => StockAdjustmentDialog(
+        productName: product.name,
+        currentStock: product.stock,
       ),
-    ),
-  );
-}
+    );
 
-    @override
+    if (result == null) return;
+
+    final stockBefore = product.stock;
+    double stockAfter;
+
+    core_inventory.StockAdjustmentType
+        adjustmentType;
+
+    switch (result.type) {
+      case StockAdjustmentType.add:
+        stockAfter =
+            stockBefore + result.quantity;
+        adjustmentType =
+            core_inventory.StockAdjustmentType.stockIn;
+        break;
+
+      case StockAdjustmentType.subtract:
+        stockAfter =
+            stockBefore - result.quantity;
+        adjustmentType =
+            core_inventory.StockAdjustmentType.stockOut;
+        break;
+
+      case StockAdjustmentType.set:
+        stockAfter = result.quantity;
+
+        if (stockAfter > stockBefore) {
+          adjustmentType =
+              core_inventory.StockAdjustmentType.stockIn;
+        } else if (stockAfter < stockBefore) {
+          adjustmentType =
+              core_inventory.StockAdjustmentType.stockOut;
+        } else {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Tidak ada perubahan stok.',
+              ),
+            ),
+          );
+
+          return;
+        }
+        break;
+    }
+
+    if (stockAfter < 0) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Stok tidak boleh menjadi negatif.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    final changedQuantity =
+        (stockAfter - stockBefore).abs();
+
+    final updatedProduct = Product(
+      id: product.id,
+      sku: product.sku,
+      barcode: product.barcode,
+      name: product.name,
+      categoryId: product.categoryId,
+      supplierId: product.supplierId,
+      purchasePrice: product.purchasePrice,
+      sellingPrice: product.sellingPrice,
+      stock: stockAfter,
+      minimumStock: product.minimumStock,
+      imageUrl: product.imageUrl,
+      businessType: product.businessType,
+      isActive: product.isActive,
+      createdAt: product.createdAt,
+      updatedAt: DateTime.now(),
+    );
+
+    try {
+      await ref
+          .read(
+            productControllerProvider.notifier,
+          )
+          .updateProduct(updatedProduct);
+
+      final adjustment = StockAdjustment(
+        id: DateTime.now()
+            .microsecondsSinceEpoch
+            .toString(),
+        productId: product.id,
+        productName: product.name,
+        type: adjustmentType,
+        quantity: changedQuantity,
+        stockBefore: stockBefore,
+        stockAfter: stockAfter,
+        reason: StockAdjustmentReason.manual,
+        notes: result.note.trim().isEmpty
+            ? 'Penyesuaian stok manual.'
+            : result.note.trim(),
+        referenceType: 'manual_adjustment',
+        referenceId: product.id,
+        createdBy: null,
+        createdAt: DateTime.now(),
+      );
+
+      await ref
+          .read(
+            stockAdjustmentControllerProvider
+                .notifier,
+          )
+          .addAdjustment(adjustment);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stok "${product.name}" berhasil '
+            'diubah dari ${_formatStock(stockBefore)} '
+            'menjadi ${_formatStock(stockAfter)}.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal menyesuaikan stok: $error',
+          ),
+        ),
+      );
+    }
+  }
+
+  String _formatStock(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toStringAsFixed(2);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final productsAsync =
         ref.watch(productControllerProvider);
@@ -215,7 +355,6 @@ class _ProductPageState
               });
             },
           ),
-
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(
@@ -233,9 +372,7 @@ class _ProductPageState
                     });
                   },
                 ),
-
                 const SizedBox(width: 8),
-
                 ProductFilterChip(
                   label: 'Aktif',
                   icon: Icons.check_circle,
@@ -246,9 +383,7 @@ class _ProductPageState
                     });
                   },
                 ),
-
                 const SizedBox(width: 8),
-
                 ProductFilterChip(
                   label: 'Nonaktif',
                   icon: Icons.block,
@@ -259,9 +394,7 @@ class _ProductPageState
                     });
                   },
                 ),
-
                 const SizedBox(width: 8),
-
                 ProductFilterChip(
                   label: 'Stok Menipis',
                   icon: Icons.warning_amber,
@@ -275,9 +408,7 @@ class _ProductPageState
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
           Expanded(
             child: productsAsync.when(
               loading: () => const Center(
@@ -346,7 +477,7 @@ class _ProductPageState
                       final product =
                           items[index];
 
-                return ProductCard(
+                      return ProductCard(
                         product: product,
                         onTap: () {
                           _openForm(product);
@@ -358,7 +489,9 @@ class _ProductPageState
                           _deleteProduct(product);
                         },
                         onAdjustStock: () {
-                          _showAdjustStockDialog(product);
+                          _showAdjustStockDialog(
+                            product,
+                          );
                         },
                       );
                     },

@@ -59,6 +59,28 @@ class InventoryPage extends StatelessWidget {
           const SizedBox(height: 24),
 
           const Text(
+            'PURCHASING',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          InventoryMenuCard(
+            icon: Icons.receipt_long_rounded,
+            title: 'Purchase Order',
+            subtitle: 'Kelola pesanan pembelian',
+            color: Colors.indigo,
+            onTap: () {
+              context.push('/purchase-orders');
+            },
+          ),
+
+          const SizedBox(height: 24),
+
+          const Text(
             'STOCK',
             style: TextStyle(
               fontSize: 14,
