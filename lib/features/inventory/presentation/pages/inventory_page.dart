@@ -103,16 +103,10 @@ class InventoryPage extends StatelessWidget {
           InventoryMenuCard(
             icon: Icons.fact_check_rounded,
             title: 'Stock Opname',
-            subtitle: 'Segera hadir',
+            subtitle: 'Pemeriksaan stok fisik',
             color: Colors.purple,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Stock Opname - Coming Soon',
-                  ),
-                ),
-              );
+              context.push('/stock-opnames');
             },
           ),
 
