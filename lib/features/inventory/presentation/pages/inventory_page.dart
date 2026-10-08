@@ -108,7 +108,9 @@ class InventoryPage extends StatelessWidget {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Stock Opname - Coming Soon'),
+                  content: Text(
+                    'Stock Opname - Coming Soon',
+                  ),
                 ),
               );
             },
@@ -117,14 +119,10 @@ class InventoryPage extends StatelessWidget {
           InventoryMenuCard(
             icon: Icons.history_rounded,
             title: 'Stock Movement',
-            subtitle: 'Segera hadir',
+            subtitle: 'Riwayat pergerakan stok',
             color: Colors.teal,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Stock Movement - Coming Soon'),
-                ),
-              );
+              context.push('/stock-movements');
             },
           ),
         ],

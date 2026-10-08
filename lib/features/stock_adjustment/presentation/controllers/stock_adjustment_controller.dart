@@ -6,14 +6,11 @@ import '../../providers/stock_adjustment_provider.dart';
 
 class StockAdjustmentController
     extends StreamNotifier<List<StockAdjustment>> {
-  late final StockAdjustmentRepository _repository;
+  StockAdjustmentRepository get _repository =>
+      ref.read(stockAdjustmentRepositoryProvider);
 
   @override
   Stream<List<StockAdjustment>> build() {
-    _repository = ref.read(
-      stockAdjustmentRepositoryProvider,
-    );
-
     return _repository.watchAdjustments();
   }
 

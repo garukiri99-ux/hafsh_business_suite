@@ -12,6 +12,7 @@ import '../../features/product/presentation/pages/product_page.dart';
 import '../../features/purchase/presentation/pages/purchase_order_page.dart';
 import '../../features/splash/splash_page.dart';
 import '../../features/stock_adjustment/presentation/pages/stock_adjustment_page.dart';
+import '../../features/stock_adjustment/presentation/pages/stock_movement_page.dart';
 import '../../features/supplier/presentation/pages/supplier_page.dart';
 import '../../features/transaction/presentation/pages/transaction_history_page.dart';
 
@@ -86,6 +87,12 @@ final appRouter = GoRouter(
       path: '/stock-adjustments',
       builder: (context, state) =>
           const StockAdjustmentPage(),
+    ),
+
+    GoRoute(
+      path: '/stock-movements',
+      builder: (context, state) =>
+          const StockMovementPage(),
     ),
 
     // ==========================
