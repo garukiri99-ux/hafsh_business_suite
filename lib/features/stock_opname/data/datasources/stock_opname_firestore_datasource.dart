@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/inventory/stock_adjustment_reason.dart';
+import '../../../../core/inventory/stock_adjustment_type.dart';
 import '../../../stock_adjustment/data/models/stock_adjustment_model.dart';
 import '../models/stock_opname_model.dart';
 
@@ -59,8 +61,7 @@ class StockOpnameFirestoreDatasource {
         );
   }
 
-  Stream<List<StockOpnameModel>>
-      watchItemsByProduct(
+  Stream<List<StockOpnameModel>> watchItemsByProduct(
     String productId,
   ) {
     return _collection
@@ -88,24 +89,20 @@ class StockOpnameFirestoreDatasource {
     return doc.data();
   }
 
-  /// Menyimpan satu item opname secara atomik.
+  /// Menyimpan satu item Stock Opname secara atomik.
   ///
-  /// Jika terdapat selisih, hasil opname, perubahan stok
-  /// produk, dan Stock Adjustment disimpan bersama-sama.
+  /// Jika ada selisih, hasil opname, perubahan stok produk,
+  /// dan Stock Adjustment disimpan dalam satu transaksi.
   ///
-  /// Jika transaksi gagal, Firestore membatalkan seluruh
-  /// perubahan dalam transaksi tersebut.
-  ///
-  /// Untuk opname tanpa selisih, hanya hasil opname yang
-  /// disimpan dan stok produk tidak diubah.
+  /// Retry dengan ID serta isi transaksi yang sama dikenali
+  /// melalui dokumen opname dan adjustment yang tersimpan.
   Future<void> saveItemAtomically({
     required StockOpnameModel item,
     StockAdjustmentModel? adjustment,
   }) async {
-    final productRef =
-        _firestore.collection('products').doc(
-              item.productId,
-            );
+    final productRef = _firestore
+        .collection('products')
+        .doc(item.productId);
 
     final opnameRef = _collection.doc(item.id);
 
@@ -115,19 +112,81 @@ class StockOpnameFirestoreDatasource {
 
     await _firestore.runTransaction<void>(
       (transaction) async {
-        // Semua pembacaan dilakukan sebelum penulisan.
-        final productSnapshot =
-            await transaction.get(productRef);
-
         final existingOpname =
             await transaction.get(opnameRef);
 
-        final existingAdjustment =
-            adjustmentRef == null
-                ? null
-                : await transaction.get(
-                    adjustmentRef,
-                  );
+        final existingAdjustment = adjustmentRef == null
+            ? null
+            : await transaction.get(adjustmentRef);
+
+        // Retry dengan ID opname yang sama.
+        if (existingOpname.exists) {
+          final savedItem = existingOpname.data();
+
+          final sameOpname = savedItem != null &&
+              savedItem.productId == item.productId &&
+              savedItem.productName == item.productName &&
+              _nearlyEqual(
+                savedItem.stockSystem,
+                item.stockSystem,
+              ) &&
+              _nearlyEqual(
+                savedItem.stockPhysical,
+                item.stockPhysical,
+              ) &&
+              _nearlyEqual(
+                savedItem.difference,
+                item.difference,
+              ) &&
+              savedItem.notes == item.notes;
+
+          if (!sameOpname) {
+            throw StateError(
+              'ID Stock Opname sudah digunakan '
+              'oleh transaksi dengan data berbeda.',
+            );
+          }
+
+          if (adjustment == null) {
+            return;
+          }
+
+          final savedAdjustment =
+              existingAdjustment?.data();
+
+          if (savedAdjustment == null) {
+            throw StateError(
+              'Hasil opname sudah ditemukan, tetapi '
+              'Stock Adjustment tidak ditemukan. '
+              'Periksa konsistensi data sebelum mencoba lagi.',
+            );
+          }
+
+          if (_sameAdjustment(
+            savedAdjustment,
+            adjustment,
+          )) {
+            // Transaksi identik sudah berhasil.
+            // Jangan memperbarui stok untuk kedua kalinya.
+            return;
+          }
+
+          throw StateError(
+            'Stock Adjustment dengan ID yang sama '
+            'memiliki data berbeda.',
+          );
+        }
+
+        if (existingAdjustment?.exists ?? false) {
+          throw StateError(
+            'ID Stock Adjustment sudah digunakan '
+            'oleh transaksi lain.',
+          );
+        }
+
+        // Semua pembacaan dilakukan sebelum penulisan.
+        final productSnapshot =
+            await transaction.get(productRef);
 
         if (!productSnapshot.exists) {
           throw StateError(
@@ -154,60 +213,29 @@ class StockOpnameFirestoreDatasource {
 
         final currentStock = stockValue.toDouble();
 
-        // Menangani retry dengan ID transaksi yang sama.
-        // Jika transaksi sebelumnya sudah berhasil dengan
-        // data yang identik, jangan mengoreksi stok lagi.
-        if (existingOpname.exists) {
-          final savedItem = existingOpname.data();
-
-          final sameOpname = savedItem != null &&
-              savedItem.productId == item.productId &&
-              savedItem.productName == item.productName &&
-              _nearlyEqual(
-                savedItem.stockSystem,
-                item.stockSystem,
-              ) &&
-              _nearlyEqual(
-                savedItem.stockPhysical,
-                item.stockPhysical,
-              ) &&
-              _nearlyEqual(
-                savedItem.difference,
-                item.difference,
-              ) &&
-              savedItem.notes == item.notes;
-
-          final stockAlreadyApplied = _nearlyEqual(
-            currentStock,
-            item.stockPhysical,
-          );
-
-          final adjustmentAlreadySaved =
-              adjustment == null ||
-                  (existingAdjustment?.exists ?? false);
-
-          if (sameOpname &&
-              stockAlreadyApplied &&
-              adjustmentAlreadySaved) {
-            return;
-          }
-
+        if (!currentStock.isFinite ||
+            !item.stockSystem.isFinite ||
+            !item.stockPhysical.isFinite ||
+            !item.difference.isFinite) {
           throw StateError(
-            'ID Stock Opname sudah digunakan oleh '
-            'transaksi lain. Muat ulang data sebelum mencoba lagi.',
+            'Nilai stok harus berupa angka yang valid.',
           );
         }
 
-        // Cegah opname menggunakan stok sistem yang sudah
-        // berubah sejak produk dimuat.
+        if (item.stockPhysical < 0) {
+          throw StateError(
+            'Stok fisik tidak boleh negatif.',
+          );
+        }
+
         if (!_nearlyEqual(
           currentStock,
           item.stockSystem,
         )) {
           throw StateError(
             'Stok ${item.productName} telah berubah '
-            'sejak opname dimulai. Muat ulang data '
-            'dan lakukan opname kembali.',
+            'sejak opname dimulai. Muat ulang data dan '
+            'lakukan opname kembali.',
           );
         }
 
@@ -220,12 +248,6 @@ class StockOpnameFirestoreDatasource {
         )) {
           throw StateError(
             'Nilai selisih Stock Opname tidak valid.',
-          );
-        }
-
-        if (item.stockPhysical < 0) {
-          throw StateError(
-            'Stok fisik tidak boleh negatif.',
           );
         }
 
@@ -244,8 +266,16 @@ class StockOpnameFirestoreDatasource {
         }
 
         if (adjustment != null) {
+          final expectedType =
+              item.difference > 0 ? 'in' : 'out';
+
           final adjustmentMatches =
               adjustment.productId == item.productId &&
+              adjustment.productName == item.productName &&
+              adjustment.type.value == expectedType &&
+              adjustment.reason.value == 'stock_opname' &&
+              adjustment.referenceType == 'stock_opname' &&
+              adjustment.referenceId == item.id &&
               _nearlyEqual(
                 adjustment.quantity,
                 item.difference.abs(),
@@ -267,7 +297,6 @@ class StockOpnameFirestoreDatasource {
           }
         }
 
-        // Penulisan dilakukan dalam satu transaksi.
         transaction.set(
           opnameRef,
           item,
@@ -320,6 +349,32 @@ class StockOpnameFirestoreDatasource {
     await _collection
         .doc(id)
         .delete();
+  }
+
+  bool _sameAdjustment(
+    StockAdjustmentModel saved,
+    StockAdjustmentModel requested,
+  ) {
+    return saved.productId == requested.productId &&
+        saved.productName == requested.productName &&
+        saved.type == requested.type &&
+        saved.reason == requested.reason &&
+        saved.notes == requested.notes &&
+        saved.referenceType == requested.referenceType &&
+        saved.referenceId == requested.referenceId &&
+        saved.createdBy == requested.createdBy &&
+        _nearlyEqual(
+          saved.quantity,
+          requested.quantity,
+        ) &&
+        _nearlyEqual(
+          saved.stockBefore,
+          requested.stockBefore,
+        ) &&
+        _nearlyEqual(
+          saved.stockAfter,
+          requested.stockAfter,
+        );
   }
 
   bool _nearlyEqual(
