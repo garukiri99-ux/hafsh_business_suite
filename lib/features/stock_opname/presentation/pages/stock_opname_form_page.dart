@@ -7,7 +7,6 @@ import '../../../../core/inventory/stock_adjustment_type.dart'
 import '../../../product/domain/entities/product.dart';
 import '../../../product/providers/product_provider.dart';
 import '../../../stock_adjustment/domain/entities/stock_adjustment.dart';
-import '../../../stock_adjustment/providers/stock_adjustment_provider.dart';
 import '../../domain/entities/stock_opname_item.dart';
 import '../../providers/stock_opname_provider.dart';
 
@@ -25,11 +24,13 @@ class _StockOpnameFormPageState
     extends ConsumerState<StockOpnameFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final Map<String, TextEditingController>
-      _controllers = {};
+  final Map<String, TextEditingController> _controllers = {};
+  final Map<String, TextEditingController> _noteControllers = {};
 
-  final Map<String, TextEditingController>
-      _noteControllers = {};
+  // Snapshot stok dan ID dipertahankan selama form terbuka.
+  // Ini membantu retry menggunakan referensi opname yang sama.
+  final Map<String, double> _systemStockByProduct = {};
+  final Map<String, String> _opnameIdByProduct = {};
 
   bool _isSaving = false;
 
@@ -46,23 +47,32 @@ class _StockOpnameFormPageState
     super.dispose();
   }
 
-  TextEditingController _controllerFor(
-    Product product,
-  ) {
+  TextEditingController _controllerFor(Product product) {
+    final stockSystem = _systemStockByProduct.putIfAbsent(
+      product.id,
+      () => product.stock,
+    );
+
     return _controllers.putIfAbsent(
       product.id,
       () => TextEditingController(
-        text: _formatNumber(product.stock),
+        text: _formatNumber(stockSystem),
       ),
     );
   }
 
-  TextEditingController _noteControllerFor(
-    Product product,
-  ) {
+  TextEditingController _noteControllerFor(Product product) {
     return _noteControllers.putIfAbsent(
       product.id,
       () => TextEditingController(),
+    );
+  }
+
+  String _opnameIdFor(Product product) {
+    return _opnameIdByProduct.putIfAbsent(
+      product.id,
+      () =>
+          '${DateTime.now().microsecondsSinceEpoch}-${product.id}',
     );
   }
 
@@ -88,54 +98,19 @@ class _StockOpnameFormPageState
       return;
     }
 
+    // Inisialisasi semua produk sebelum transaksi pertama,
+    // termasuk produk yang belum dibuat oleh ListView.builder.
+    for (final product in products) {
+      _controllerFor(product);
+      _noteControllerFor(product);
+      _opnameIdFor(product);
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final opnameItems = <StockOpnameItem>[];
-
-    for (final product in products) {
-      final controller =
-          _controllers[product.id];
-
-      if (controller == null) {
-        continue;
-      }
-
-      final stockPhysical =
-          _parseDouble(controller.text);
-
-      final difference =
-          stockPhysical - product.stock;
-
-      final note =
-          _noteControllers[product.id]?.text
-                  .trim() ??
-              '';
-
-      opnameItems.add(
-        StockOpnameItem(
-          id: DateTime.now()
-              .microsecondsSinceEpoch
-              .toString(),
-          productId: product.id,
-          productName: product.name,
-          stockSystem: product.stock,
-          stockPhysical: stockPhysical,
-          difference: difference,
-          notes: note,
-          createdAt: DateTime.now(),
-        ),
-      );
-
-      await Future<void>.delayed(
-        const Duration(
-          microseconds: 1,
-        ),
-      );
-    }
-
-    if (opnameItems.isEmpty) {
+    if (products.isEmpty) {
       if (!mounted) {
         return;
       }
@@ -143,12 +118,38 @@ class _StockOpnameFormPageState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Tidak ada data Stock Opname yang diproses.',
+            'Tidak ada produk untuk diproses.',
           ),
         ),
       );
 
       return;
+    }
+
+    final opnameItems = <StockOpnameItem>[];
+
+    for (final product in products) {
+      final controller = _controllers[product.id]!;
+      final stockSystem =
+          _systemStockByProduct[product.id]!;
+      final stockPhysical =
+          _parseDouble(controller.text);
+      final difference = stockPhysical - stockSystem;
+      final note =
+          _noteControllers[product.id]!.text.trim();
+
+      opnameItems.add(
+        StockOpnameItem(
+          id: _opnameIdFor(product),
+          productId: product.id,
+          productName: product.name,
+          stockSystem: stockSystem,
+          stockPhysical: stockPhysical,
+          difference: difference,
+          notes: note,
+          createdAt: DateTime.now(),
+        ),
+      );
     }
 
     setState(() {
@@ -160,75 +161,38 @@ class _StockOpnameFormPageState
         stockOpnameControllerProvider.notifier,
       );
 
-      final stockAdjustmentController =
-          ref.read(
-        stockAdjustmentControllerProvider.notifier,
-      );
-
-      final productController = ref.read(
-        productControllerProvider.notifier,
-      );
-
       for (final item in opnameItems) {
-        await opnameController.addItem(item);
+        StockAdjustment? adjustment;
 
-        if (!item.hasDifference) {
-          continue;
-        }
+        if (item.hasDifference) {
+          final adjustmentType = item.difference > 0
+              ? core_inventory.StockAdjustmentType.stockIn
+              : core_inventory.StockAdjustmentType.stockOut;
 
-        final product =
-            await ref
-                .read(productRepositoryProvider)
-                .getProductById(
-                  item.productId,
-                );
-
-        if (product == null) {
-          throw StateError(
-            'Produk ${item.productName} tidak ditemukan.',
+          adjustment = StockAdjustment(
+            id: '${item.id}-adjustment',
+            productId: item.productId,
+            productName: item.productName,
+            type: adjustmentType,
+            quantity: item.difference.abs(),
+            stockBefore: item.stockSystem,
+            stockAfter: item.stockPhysical,
+            reason: StockAdjustmentReason.stockOpname,
+            notes: item.notes.trim().isEmpty
+                ? 'Koreksi stok berdasarkan Stock Opname.'
+                : item.notes.trim(),
+            referenceType: 'stock_opname',
+            referenceId: item.id,
+            createdBy: null,
+            createdAt: item.createdAt,
           );
         }
 
-        final updatedProduct =
-            product.copyWith(
-          stock: item.stockPhysical,
-          updatedAt: DateTime.now(),
-        );
-
-        await productController.updateProduct(
-          updatedProduct,
-        );
-
-        final adjustmentType =
-            item.difference > 0
-                ? core_inventory
-                    .StockAdjustmentType
-                    .stockIn
-                : core_inventory
-                    .StockAdjustmentType
-                    .stockOut;
-
-        final adjustment =
-            StockAdjustment(
-          id: '${item.id}-adjustment',
-          productId: item.productId,
-          productName: item.productName,
-          type: adjustmentType,
-          quantity: item.difference.abs(),
-          stockBefore: item.stockSystem,
-          stockAfter: item.stockPhysical,
-          reason: StockAdjustmentReason.stockOpname,
-          notes: item.notes.trim().isEmpty
-              ? 'Koreksi stok berdasarkan Stock Opname.'
-              : item.notes.trim(),
-          referenceType: 'stock_opname',
-          referenceId: item.id,
-          createdBy: null,
-          createdAt: DateTime.now(),
-        );
-
-        await stockAdjustmentController.addAdjustment(
-          adjustment,
+        // Hasil opname dan, jika ada selisih,
+        // koreksi stok serta adjustment tersimpan atomik.
+        await opnameController.saveItemAtomically(
+          item: item,
+          adjustment: adjustment,
         );
       }
 
@@ -267,27 +231,19 @@ class _StockOpnameFormPageState
     }
   }
 
-  Widget _buildProductCard(
-    Product product,
-  ) {
-    final controller =
-        _controllerFor(product);
-
-    final noteController =
-        _noteControllerFor(product);
-
-    final stockPhysical =
-        _parseDouble(controller.text);
-
-    final difference =
-        stockPhysical - product.stock;
+  Widget _buildProductCard(Product product) {
+    final controller = _controllerFor(product);
+    final noteController = _noteControllerFor(product);
+    final stockSystem =
+        _systemStockByProduct[product.id]!;
+    final stockPhysical = _parseDouble(controller.text);
+    final difference = stockPhysical - stockSystem;
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               product.name,
@@ -305,12 +261,11 @@ class _StockOpnameFormPageState
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Stok Sistem'),
                 Text(
-                  _formatNumber(product.stock),
+                  _formatNumber(stockSystem),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
@@ -324,8 +279,7 @@ class _StockOpnameFormPageState
                   const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration:
-                  const InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Stok Fisik',
                 border: OutlineInputBorder(),
               ),
@@ -333,8 +287,23 @@ class _StockOpnameFormPageState
                 setState(() {});
               },
               validator: (value) {
-                final stock =
-                    _parseDouble(value ?? '');
+                final input = value?.trim() ?? '';
+
+                if (input.isEmpty) {
+                  return 'Stok fisik wajib diisi.';
+                }
+
+                final stock = double.tryParse(
+                  input.replaceAll(',', '.'),
+                );
+
+                if (stock == null) {
+                  return 'Stok fisik tidak valid.';
+                }
+
+                if (!stock.isFinite) {
+                  return 'Stok fisik tidak valid.';
+                }
 
                 if (stock < 0) {
                   return 'Stok tidak boleh negatif.';
@@ -345,15 +314,12 @@ class _StockOpnameFormPageState
             ),
             const SizedBox(height: 12),
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Selisih'),
                 Text(
-                  _formatDifference(
-                    difference,
-                  ),
-                  style: TextStyle(
+                  _formatDifference(difference),
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -363,8 +329,7 @@ class _StockOpnameFormPageState
             TextFormField(
               controller: noteController,
               maxLines: 2,
-              decoration:
-                  const InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Catatan',
                 border: OutlineInputBorder(),
               ),
@@ -375,9 +340,7 @@ class _StockOpnameFormPageState
     );
   }
 
-  String _formatDifference(
-    double value,
-  ) {
+  String _formatDifference(double value) {
     if (value == 0) {
       return '0';
     }
@@ -403,13 +366,11 @@ class _StockOpnameFormPageState
         loading: () => const Center(
           child: CircularProgressIndicator(),
         ),
-        error: (error, stackTrace) =>
-            Center(
+        error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
-              mainAxisSize:
-                  MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.error_outline,
@@ -446,20 +407,14 @@ class _StockOpnameFormPageState
               children: [
                 Expanded(
                   child: ListView.builder(
-                    padding:
-                        const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     itemCount: products.length,
-                    itemBuilder: (
-                      context,
-                      index,
-                    ) {
+                    itemBuilder: (context, index) {
                       return Padding(
-                        padding:
-                            const EdgeInsets.only(
+                        padding: const EdgeInsets.only(
                           bottom: 12,
                         ),
-                        child:
-                            _buildProductCard(
+                        child: _buildProductCard(
                           products[index],
                         ),
                       );
@@ -469,30 +424,24 @@ class _StockOpnameFormPageState
                 SafeArea(
                   top: false,
                   child: Padding(
-                    padding:
-                        const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
                         onPressed: _isSaving
                             ? null
                             : () {
-                                _save(
-                                  products,
-                                );
+                                _save(products);
                               },
                         icon: _isSaving
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child:
-                                    CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(
-                                Icons.save,
-                              ),
+                            : const Icon(Icons.save),
                         label: Text(
                           _isSaving
                               ? 'Menyimpan...'

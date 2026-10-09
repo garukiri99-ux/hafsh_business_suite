@@ -1,3 +1,5 @@
+import '../../../stock_adjustment/data/models/stock_adjustment_model.dart';
+import '../../../stock_adjustment/domain/entities/stock_adjustment.dart';
 import '../../data/datasources/stock_opname_firestore_datasource.dart';
 import '../../data/models/stock_opname_model.dart';
 import '../entities/stock_opname_item.dart';
@@ -61,5 +63,30 @@ class StockOpnameRepositoryImpl
     String id,
   ) async {
     await _datasource.deleteItem(id);
+  }
+
+  /// Menyimpan hasil opname dan koreksi stok
+  /// melalui transaksi Firestore yang atomik.
+  ///
+  /// Jika tidak ada selisih, Stock Adjustment
+  /// tidak perlu disertakan.
+  @override
+  Future<void> saveItemAtomically({
+    required StockOpnameItem item,
+    StockAdjustment? adjustment,
+  }) async {
+    final opnameModel =
+        StockOpnameModel.fromEntity(item);
+
+    final adjustmentModel = adjustment == null
+        ? null
+        : StockAdjustmentModel.fromEntity(
+            adjustment,
+          );
+
+    await _datasource.saveItemAtomically(
+      item: opnameModel,
+      adjustment: adjustmentModel,
+    );
   }
 }
