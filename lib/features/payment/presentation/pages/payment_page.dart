@@ -6,8 +6,8 @@ import '../../../pos/presentation/providers/cart_provider.dart';
 
 import '../../../transaction/providers/transaction_repository_provider.dart';
 import '../../../transaction/providers/transaction_service_provider.dart';
-
 import '../../../transaction/presentation/providers/transaction_controller.dart';
+import '../../../transaction/presentation/providers/transaction_history_controller.dart';
 
 import '../providers/payment_provider.dart';
 import '../widgets/change_summary.dart';
@@ -33,7 +33,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     controller.addListener(() {
       final text = controller.text.replaceAll('.', '');
-
       final amount = int.tryParse(text) ?? 0;
 
       ref.read(paidAmountProvider.notifier).setAmount(amount);
@@ -49,9 +48,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     final summary = ref.watch(checkoutProvider);
-
     final paymentMethod = ref.watch(paymentMethodProvider);
-
     final paidAmount = ref.watch(paidAmountProvider);
 
     final transactionStatus =
@@ -61,7 +58,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Payment"),
+        title: const Text('Payment'),
         centerTitle: true,
       ),
       resizeToAvoidBottomInset: true,
@@ -73,9 +70,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
               PaymentSummary(
                 total: summary.total,
               ),
-
               const SizedBox(height: 16),
-
               PaymentMethodSelector(
                 value: paymentMethod,
                 onChanged: (method) {
@@ -84,99 +79,98 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                       .setMethod(method);
                 },
               ),
-
               const SizedBox(height: 16),
-
               PaymentAmountField(
                 controller: controller,
               ),
-
               const SizedBox(height: 16),
-
               ChangeSummary(
                 change: change < 0 ? 0 : change,
               ),
-
               const SizedBox(height: 32),
-
               PayButton(
-  loading: transactionStatus == TransactionStatus.loading,
-  onPressed: paidAmount >= summary.total
-      ? () async {
-          final cart = ref.read(cartProvider);
+                loading:
+                    transactionStatus == TransactionStatus.loading,
+                onPressed: paidAmount >= summary.total
+                    ? () async {
+                        final cart = ref.read(cartProvider);
 
-          final transaction = ref
-              .read(transactionServiceProvider)
-              .buildTransaction(
-                cart: cart,
-                summary: summary,
-                paymentMethod: paymentMethod,
-                paidAmount: paidAmount,
-              );
+                        final transaction = ref
+                            .read(transactionServiceProvider)
+                            .buildTransaction(
+                              cart: cart,
+                              summary: summary,
+                              paymentMethod: paymentMethod,
+                              paidAmount: paidAmount,
+                            );
 
-          final controller = ref.read(
-            transactionControllerProvider.notifier,
-          );
+                        final transactionController = ref.read(
+                          transactionControllerProvider.notifier,
+                        );
 
-          try {
-            await controller.execute(() async {
-              await ref
-                  .read(transactionRepositoryProvider)
-                  .save(transaction);
-            });
+                        try {
+                          await transactionController.execute(() async {
+                            await ref
+                                .read(transactionRepositoryProvider)
+                                .save(transaction);
+                          });
 
-            ref.read(cartProvider.notifier).clear();
+                          // Muat ulang riwayat setelah transaksi tersimpan.
+                          ref.invalidate(
+                            transactionHistoryControllerProvider,
+                          );
 
-            ref.read(paidAmountProvider.notifier).clear();
+                          ref.read(cartProvider.notifier).clear();
+                          ref.read(paidAmountProvider.notifier).clear();
 
-            ref
-                .read(paymentMethodProvider.notifier)
-                .setMethod(PaymentMethod.cash);
+                          ref
+                              .read(paymentMethodProvider.notifier)
+                              .setMethod(PaymentMethod.cash);
 
-            if (!context.mounted) return;
+                          if (!context.mounted) return;
 
-            await showDialog(
-              context: context,
-              builder: (_) => AlertDialog(
-                icon: const Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: 48,
-                ),
-                title: const Text("Pembayaran Berhasil"),
-                content: Text(
-                  "Invoice : ${transaction.invoice.number}\n\n"
-                  "Transaksi berhasil disimpan.",
-                ),
-                actions: [
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
+                          await showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              icon: const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                                size: 48,
+                              ),
+                              title: const Text('Pembayaran Berhasil'),
+                              content: Text(
+                                'Invoice : ${transaction.invoice.number}\n\n'
+                                'Transaksi berhasil disimpan.',
+                              ),
+                              actions: [
+                                FilledButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (!context.mounted) return;
+
+                          Navigator.pop(context);
+                        } catch (e) {
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: Colors.red,
+                              content: Text(
+                                'Gagal menyimpan transaksi.\n$e',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    : null,
               ),
-            );
-
-            if (!context.mounted) return;
-
-            Navigator.pop(context);
-          } catch (e) {
-            if (!context.mounted) return;
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: Colors.red,
-                content: Text(
-                  "Gagal menyimpan transaksi.\n$e",
-                ),
-              ),
-            );
-          }
-        }
-      : null,
-),
             ],
           ),
         ),

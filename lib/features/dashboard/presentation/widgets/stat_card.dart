@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class StatCard extends StatelessWidget {
@@ -5,6 +6,7 @@ class StatCard extends StatelessWidget {
   final String title;
   final String value;
   final Color color;
+  final String periodLabel;
 
   const StatCard({
     super.key,
@@ -12,6 +14,7 @@ class StatCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.color,
+    this.periodLabel = 'Hari ini',
   });
 
   @override
@@ -28,7 +31,6 @@ class StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 CircleAvatar(
@@ -40,9 +42,7 @@ class StatCard extends StatelessWidget {
                     color: color,
                   ),
                 ),
-
                 const SizedBox(width: 10),
-
                 Expanded(
                   child: Text(
                     title,
@@ -57,33 +57,42 @@ class StatCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const Spacer(),
-
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
               ),
             ),
-
             const SizedBox(height: 6),
-
             Row(
-              children: const [
-                Icon(
+              children: [
+                const Icon(
                   Icons.schedule,
                   size: 13,
                   color: Colors.grey,
                 ),
-                SizedBox(width: 4),
-                Text(
-                  "Hari ini",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    periodLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ],

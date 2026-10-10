@@ -12,18 +12,50 @@ class DashboardHeader extends StatelessWidget {
     final hour = DateTime.now().hour;
 
     if (hour < 11) {
-      return "Selamat Pagi";
+      return 'Selamat Pagi';
     } else if (hour < 15) {
-      return "Selamat Siang";
+      return 'Selamat Siang';
     } else if (hour < 18) {
-      return "Selamat Sore";
+      return 'Selamat Sore';
     } else {
-      return "Selamat Malam";
+      return 'Selamat Malam';
     }
+  }
+
+  String formatDate(DateTime date) {
+    const weekdays = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
+
+    const months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return '${weekdays[date.weekday - 1]}, '
+        '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       decoration: const BoxDecoration(
@@ -66,9 +98,7 @@ class DashboardHeader extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(width: 18),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,9 +110,7 @@ class DashboardHeader extends StatelessWidget {
                       fontSize: 14,
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
                   Text(
                     userName,
                     style: const TextStyle(
@@ -91,9 +119,7 @@ class DashboardHeader extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 6),
-
                   Text(
                     getGreeting(),
                     style: const TextStyle(
@@ -102,12 +128,10 @@ class DashboardHeader extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-
                   const SizedBox(height: 2),
-
-                  const Text(
-                    "Jumat, 17 Juli 2026",
-                    style: TextStyle(
+                  Text(
+                    formatDate(now),
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
                     ),
@@ -115,7 +139,6 @@ class DashboardHeader extends StatelessWidget {
                 ],
               ),
             ),
-
             Container(
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.18),
